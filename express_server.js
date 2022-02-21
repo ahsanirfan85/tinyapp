@@ -38,10 +38,10 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  // res.send("Ok");         // Respond with 'Ok' (we will replace this)
   randomString = generateRandomString();
   urlDatabase[randomString] = req.body.longURL;
-  console.log(urlDatabase);
+  res.redirect(`/urls/${randomString}`);
 });
 
 app.get("/u/:shortURL", (req, res) => {
