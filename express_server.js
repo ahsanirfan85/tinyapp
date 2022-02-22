@@ -32,6 +32,9 @@ app.get("/", (req, res) => {
 
 app.get("/login", (req, res) => {
   const userId = req.cookies["user_id"];
+    if (userId) {
+      return res.redirect("/urls");
+    }
   const user = users[userId];
   const templateVars = {
     user: user
@@ -59,6 +62,9 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const userId = req.cookies["user_id"];
+  if (!userId) {
+    return res.redirect("/login");
+  }
   const user = users[userId];
   const templateVars = {
     user: user
@@ -77,7 +83,10 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  // res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  const userId = req.cookies["user_id"];
+  if (!userId) {
+    res.send("Error!");
+  }
   randomString = generateRandomString();
   urlDatabase[randomString] = req.body.longURL;
   res.redirect(`/urls/${randomString}`);
@@ -118,6 +127,9 @@ app.post("/logout", (req, res) => {
 
 app.get("/register", (req, res) => {
   const userId = req.cookies["user_id"];
+  if (userId) {
+    return res.redirect("/urls");
+  }
   const user = users[userId];
   const templateVars = {
     user: user
