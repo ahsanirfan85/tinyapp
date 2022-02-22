@@ -100,7 +100,14 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
+  let email = req.body.email;
+  let passwordInput = req.body.password;
+  let userId = emailLookup(email);
+  
+  if (!userId || users[userId].password !== passwordInput) {
+    return res.send("Error 403");
+  }
+  res.cookie('user_id', userId);
   res.redirect('/urls');
 });
 
@@ -151,7 +158,7 @@ function emailLookup(email) {
 
   for (const each in users) {
     if (users[each].email === email) {
-      return true;
+      return users[each].id;
     }
   }
 
