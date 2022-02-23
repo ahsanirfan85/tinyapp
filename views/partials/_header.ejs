@@ -12,21 +12,21 @@
     </div>
     <div class="navbar-nav">
       <div class="form-group">
-          <% if(user) { %>
-          <div class="row">
-            <div class="col">
-              <label class="navbar-brand"><%= user.email %> is logged in!</label>
-            </div>
-            <div class="col">
-              <form class="form-inline" action="/logout" method="POST">
-                <button type="submit" class="btn btn-outline-dark">Logout</button>
-              </form>
-            </div>
-          </div>
-          <% } else { %>
+          <% if(!user) { %>
             <div class="navbar-nav">
               <a class="nav-item nav-link" href="/register">Register</a>
               <a class="nav-item nav-link" href="/login">Login</a>
+            </div>
+          <% } else { %>
+            <div class="row">
+              <div class="col">
+                <label class="navbar-brand"><%= user.email %> is logged in!</label>
+              </div>
+              <div class="col">
+                <form class="form-inline" action="/logout" method="POST">
+                  <button type="submit" class="btn btn-outline-dark">Logout</button>
+                </form>
+              </div>
             </div>
           <% } %>
     </div>
