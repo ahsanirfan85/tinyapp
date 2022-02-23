@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcryptjs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
@@ -168,7 +169,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 // What happens when you use the "/register" page to register an account
 app.post("/register", (req, res) => {
-  const userID = req.cookies["user_id"];
+  let userID = req.cookies["user_id"];
   const user = users[userID];
 
   if (userID) {
@@ -196,7 +197,7 @@ app.post("/register", (req, res) => {
   let newUserObject = users[userID];
   newUserObject.id = userID;
   newUserObject.email = req.body.email;
-  newUserObject.password = req.body.password;
+  newUserObject.password = bcrypt.hashSync(req.body.password, 10);
   res.cookie("user_id", userID);
   res.redirect('/urls');
 });
@@ -221,10 +222,10 @@ app.post("/login", (req, res) => {
     return res.render("errors", templateVars);
   }
 
-  if (user.password !== passwordInput) {
+  if (!bcrypt.compareSync(passwordInput, user.password)) {
     const templateVars = {
       user: user,
-      errorMessage: "Your password is incorrect! Please enter the correct password!"
+      errorMessage: "Account error! Please try with different credentials!"
     }
     return res.render("errors", templateVars);
   }
