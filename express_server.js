@@ -59,7 +59,7 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   const userId = req.cookies["user_id"];
   if (!userId) {
-    return res.redirect("/login")
+    return res.send("error please login first")
   }
   const user = users[userId];
   const urls = {}
@@ -89,6 +89,9 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const userId = req.cookies["user_id"];
+  if (!userId) {
+    res.send("Error please login first");
+  }
   const user = users[userId];
   const templateVars = {
     shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL,
