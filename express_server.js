@@ -2,10 +2,15 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
+// const cookieParser = require("cookie-parser");
 const bcrypt = require('bcryptjs');
+const cookieSession = require('cookie-session');
+const { getUserByEmail } = require('./helpers.js');
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+// app.use(cookieParser());
+app.use(cookieSession({
+  keys: ["mynameisahsan"]
+}));
 app.set("view engine", "ejs");
 
 // Setting port: the assignment asked for port 8080 - I changed to 3000 because 8080 wasn't working on my computer
@@ -45,7 +50,7 @@ const users = {
 
 // When you acces the "main page"
 app.get("/", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   if (userID) {
     return res.redirect("/urls");
   }
@@ -59,7 +64,7 @@ app.get("/", (req, res) => {
 
 // When you access the "/register" page
 app.get("/register", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   if (userID) {
     return res.redirect("/urls");
   }
@@ -72,7 +77,7 @@ app.get("/register", (req, res) => {
 
 // When you access the "/login" page
 app.get("/login", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
     if (userID) {
       return res.redirect("/urls");
     }
@@ -85,7 +90,7 @@ app.get("/login", (req, res) => {
 
 // When you access the "/urls" page
 app.get("/urls", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   if (!userID) {
     const templateVars = {
@@ -106,7 +111,7 @@ app.get("/urls", (req, res) => {
 
 // When you access the "/urls/new" page
 app.get("/urls/new", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   if (!userID) {
     const templateVars = {
@@ -124,7 +129,7 @@ app.get("/urls/new", (req, res) => {
 
 // When you access the "/urls/:shortURL" page
 app.get("/urls/:shortURL", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   
   if (!userID) {
@@ -169,7 +174,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 // What happens when you use the "/register" page to register an account
 app.post("/register", (req, res) => {
-  let userID = req.cookies["user_id"];
+  let userID = req.session.user_id;
   const user = users[userID];
 
   if (userID) {
@@ -184,7 +189,7 @@ app.post("/register", (req, res) => {
     return res.render("errors", templateVars);
   }
 
-  if (emailLookup(req.body.email)) {
+  if (getUserByEmail(req.body.email, users)) {
     const templateVars = {
       user: user,
       errorMessage: "Another account is using your email! Please register with another email address!"
@@ -198,7 +203,7 @@ app.post("/register", (req, res) => {
   newUserObject.id = userID;
   newUserObject.email = req.body.email;
   newUserObject.password = bcrypt.hashSync(req.body.password, 10);
-  res.cookie("user_id", userID);
+  req.session.user_id = userID;
   res.redirect('/urls');
 });
 
@@ -206,9 +211,9 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
   let email = req.body.email;
   let passwordInput = req.body.password;
-  let userID = emailLookup(email);
+  let userID = getUserByEmail(email, users);
   let user = users[userID];
-  let cookie = req.cookies["user_id"];
+  let cookie = req.session.user_id;
 
   if (cookie) {
     return res.redirect("/urls");
@@ -230,13 +235,13 @@ app.post("/login", (req, res) => {
     return res.render("errors", templateVars);
   }
 
-  res.cookie('user_id', userID);
+  req.session.user_id = userID;
   res.redirect('/urls');
 });
 
 // What happens when you use the "/urls/new" page to create a new short URL
 app.post("/urls", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
 
   if (!userID) {
@@ -267,7 +272,7 @@ app.post("/urls", (req, res) => {
 
 // What happens when you click on the delete button on the "/urls" page
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   const shortURL = req.params.shortURL;
 
@@ -301,7 +306,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // What happens when you use the edit functionality on the "urls/:shortURL" page
 app.post("/urls/:shortURL", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   const shortURL = req.params.shortURL;
 
@@ -335,7 +340,7 @@ app.post("/urls/:shortURL", (req, res) => {
 
 // What happens when you click on the logout button in the header
 app.post("/logout", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
 
   if (!userID) {
@@ -345,7 +350,7 @@ app.post("/logout", (req, res) => {
     }
     return res.render("errors", templateVars);
   }
-  res.clearCookie('user_id');
+  req.session.user_id = '';
   res.redirect('/urls');
 });
 
@@ -358,7 +363,7 @@ app.listen(PORT, () => {
 // Helper Functions
 
 // Function to Generate Random Strings - Used to generate IDs & short URLs
-function generateRandomString() {
+const generateRandomString = () => {
   const array = ['1','2','3','4','5','6','7','8','9','0','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','X']
   let string = '';
   for (let i = 0; i < 6; i++) {
@@ -366,19 +371,8 @@ function generateRandomString() {
   } return string;
 }
 
-// Function to determine if a particular email exists in the user database - If yes, it returns the user ID, if not it returns 'false'
-function emailLookup(email) {
-
-  for (const each in users) {
-    if (users[each].email === email) {
-      return users[each].id;
-    }
-  } return false;
-}
-
 // Function to return an object of key:value pairs where the key is the shortURL and the value is the longURL associated with a particular user ID
-
-function urlsForUser(id) {
+const urlsForUser = (id) => {
   const URLs = {}
   for (const key in urlDatabase) {
     if (urlDatabase[key].userID === id) {
